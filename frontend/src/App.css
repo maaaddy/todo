@@ -43,7 +43,40 @@ h1 {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   @apply shadow shadow-gray-200;
 }
+
 .sticky-note:hover {
   transform: scale(1.05);
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.back-color {
+  background-color: #91c7f3ce;
+  padding: 35px;
+}
+
+.menu-item {
+  @apply p-2 mx-2 ml-4 rounded-lg text-gray-800 hover:bg-blue-100 hover:text-black transition-all duration-300 flex items-center space-x-2;
+}
+
+.form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.form-container {
+  background: white;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 400px;
+  max-width: 100%;
 }

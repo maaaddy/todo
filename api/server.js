@@ -43,8 +43,39 @@ app.get('/todo', async (_req, res) => {
   }
 });
 
+app.put('/tasks/update', async (req, res) => {
+  try {
+    const { title, desc, _id } = req.body;
+    const task = await Task.findById(_id);
+    if (task) {
+      task.title = title;
+      task.desc = desc;
+      const updatedTask = await task.save();
+      res.json(updatedTask);
+    } else {
+      res.status(404).send("No task found");
+    }
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).send("Update unsuccessful");
+  }
+});
 
-app.get
+app.put('/tasks/delete', async (req, res) => {
+  try {
+    const { _id } = req.body;
+    const task = await Task.findById(_id);
+    if (task) {
+      Task.deleteOne({_id});
+      res.json("Task Deleted");
+    } else {
+      res.status(404).send("No task found");
+    }
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).send("Delete unsuccessful");
+  }
+});
 
 // Port that we're listening on -----------------------------------------
 const server = app.listen(5000);
