@@ -1,67 +1,109 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import DatePicker from "react-datepicker";
 
-function HomePage() {
+function Notes() {
     const [tasks, setTasks] = useState([]);
     const [title, setTitle] = useState('');
     const [desc, setDesc] = useState('');
+    const [theDate, setTheDate] = useState(new Date());
+    const [isTodayUpcomingNotes, setTodayUpcomingNotes] = useState('notes');
     const [formVisible, setFormVisible] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-
+    
     useEffect(() => {
         const fetchTasks = async () => {
             try {
                 const response = await axios.get('/todo');
-                setTasks(response.data);
+                const parsedTasks = response.data.map(task => ({
+                    ...task,
+                    dueDate: task.dueDate ? new Date(task.dueDate) : null,
+                }));
+                setTasks(parsedTasks);
             } catch (err) {
                 console.error('Error fetching tasks:', err);
             }
         };
         fetchTasks();
     }, []);
+    
+    const filterTasks = () => {
+        const now = new Date();
+        return tasks.filter(task => {
+            const taskDate = new Date(task.dueDate);
+            if (!task.dueDate) {
+                return isTodayUpcomingNotes === 'notes';
+            } if (isTodayUpcomingNotes === 'today') {
+                return taskDate.toDateString() === now.toDateString();
+            } if (isTodayUpcomingNotes === 'upcoming') {
+                return taskDate > now;
+            }
+        });
+    };
 
-    function handleSubmit(ev) {
+    const handleSubmit = async (ev) => {
         ev.preventDefault();
-        if (isEditing) {
-          axios.put('/tasks/update', { 
-            title, 
-            desc, 
-            _id: isEditing._id
-          })
-          .then(response => {
-            setTasks(tasks.map(task => task._id === isEditing._id ? response.data : task));
-            setIsEditing(null);
+        try {
+            const taskDate =
+                isTodayUpcomingNotes === 'notes'
+                    ? null
+                    : theDate || isEditing?.dueDate || new Date();
+    
+            if (isEditing) {
+                const updatedTask = { 
+                    title, 
+                    desc, 
+                    dueDate: taskDate ? taskDate.toISOString() : null,
+                    _id: isEditing._id 
+                };
+                const response = await axios.put('/tasks/update', updatedTask);
+                setTasks(tasks.map(task => 
+                    task._id === isEditing._id 
+                        ? { ...response.data, dueDate: response.data.dueDate ? new Date(response.data.dueDate) : null }
+                        : task
+                ));
+            } else {
+                const newTask = { 
+                    title, 
+                    desc, 
+                    dueDate: taskDate ? taskDate.toISOString() : null 
+                };
+                const response = await axios.post('/tasks', newTask);
+                setTasks([...tasks, { ...response.data, dueDate: taskDate }]);
+            }
             setFormVisible(false);
-          })
-          .catch(err => {
-            console.error('Error editing task:', err);
-          });
-        } else {
-          axios.post('/tasks', { title, desc })
-            .then(response => {
-              console.log('Task created:', response.data);
-              setTasks([...tasks, response.data]);
-              setFormVisible(false);
-            })
-            .catch(err => {
-              console.error('Error posting task:', err);
-            });
+            resetForm();
+        } catch (err) {
+            console.error('Error submitting task:', err);
         }
+    };
+    
+    const resetForm = () => {
         setTitle('');
         setDesc('');
-    }
-      
+        setTheDate(new Date());
+        setIsEditing(null);
+    };
+
+    const deleteTask = async (task) => {
+        try {
+            await axios.put('/tasks/delete', { _id: task._id });
+            setTasks(prevTasks => prevTasks.filter(t => t._id !== task._id));
+        } catch (err) {
+            console.error('Error deleting task:', err);
+        }
+    };
+
     const stickyNoteClick = (task) => {
         setIsEditing(task);
         setTitle(task.title);
         setDesc(task.desc);
+        setTheDate(new Date(task.dueDate));
         setFormVisible(true);
     };
 
     const createBaseStickyNote = () => {
-        setIsEditing(null);
-        setTitle('');
-        setDesc('');
+        resetForm();
         setFormVisible(true);
     };
 
@@ -70,44 +112,55 @@ function HomePage() {
             <div className="homepage bg-white pb-20 rounded-3xl shadow-xl">
                 {formVisible && (
                         <div className="form-overlay">
-                            <div className="form-container font-semibold text-blue-900 text-center">
-                                <span>{isEditing ? 'Edit Sticky Note' : 'New Sticky Note'}</span>
-                                <form onSubmit={handleSubmit}>
-                                    <textarea
-                                        value={title}
-                                        onChange={(ev) => setTitle(ev.target.value)}
-                                        type="text"
-                                        placeholder="Title"
-                                        className="mt-3 block bg-blue-50 border border-blue-400 rounded-sm shadow shadow-gray mx-auto w-80 p-3 mb-2 resize-none overflow-y-auto"
-                                        style={{ height: '50px' }}
-                                    />
-                                    <textarea
-                                        value={desc}
-                                        onChange={(ev) => setDesc(ev.target.value)}
-                                        placeholder="Description"
-                                        rows="5"
-                                        className="block bg-blue-50 border border-blue-400 rounded-sm shadow shadow-gray mx-auto w-80 p-3 mb-4 resize-none overflow-y-auto"
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="bg-blue-200 border border-blue-400 block w-1/2 mx-auto rounded-sm shadow shadow-gray m-2 text-blue-800"
-                                    >
-                                        Submit
-                                    </button>
-                                </form>
-                            </div>
+                        <div className="form-container font-semibold text-blue-900 text-center">
+                            <span>{isEditing ? 'Edit Sticky Note' : 'New Sticky Note'}</span>
+                            <form onSubmit={handleSubmit}>
+                                <textarea
+                                    value={title}
+                                    onChange={(ev) => setTitle(ev.target.value)}
+                                    type="text"
+                                    placeholder="Title"
+                                    className="mt-3 block bg-blue-50 border border-blue-400 rounded-sm shadow shadow-gray mx-auto w-80 p-3 mb-2 resize-none overflow-y-auto"
+                                    style={{ height: '50px' }}
+                                />
+                                <textarea
+                                    value={desc}
+                                    onChange={(ev) => setDesc(ev.target.value)}
+                                    placeholder="Description"
+                                    rows="5"
+                                    className="block bg-blue-50 border border-blue-400 rounded-sm shadow shadow-gray mx-auto w-80 p-3 mb-4 resize-none overflow-y-auto"
+                                />
+                                <div className={isTodayUpcomingNotes === 'notes' ? 'bg-blue-100' : ''}>
+                                    {isTodayUpcomingNotes !== 'notes' && (
+                                        <DatePicker
+                                            selected={theDate || new Date()}
+                                            onChange={(date) => setTheDate(date || new Date())}
+                                            className="block mx-auto border rounded-sm p-2"
+                                        />
+                                    )}
+                                </div>
 
+                                <button
+                                    type="submit"
+                                    className="bg-blue-200 border border-blue-400 block w-1/2 mx-auto rounded-sm shadow shadow-gray m-2 text-blue-800"
+                                >
+                                    Submit
+                                </button>
+                            </form>
                         </div>
+                    </div>
                 )}
                 <div className="homepage flex h-screen">
                     <div className="w-1/6 p-4 flex flex-col justify-between pt-5">
                         <div className="bg-gray-50 rounded-xl h-full shadow-sm">
                             <h2 className="text-xl font-bold text-gray-800 mb-4 pl-4 pt-3"><span>Menu</span></h2>
                             <hr className="border-t-1 border-gray-200 mx-4 pb-2" />
-                            <p className="text-xs text-gray-800 font-bold font-mono pl-5 py-2 ">TASKS</p>
+                            <p className="text-sm text-gray-800 font-bold font-mono pl-5 py-2 ">TASKS</p>
                             <ul className="space-y-2">
-                                
-                                <li className="menu-item">
+                                <li 
+                                    onClick={() => setTodayUpcomingNotes('today')}
+                                    className={`menu-item ${isTodayUpcomingNotes === 'today' ? 'bg-blue-100' : ''}`}
+                                >
                                     <svg width="20px" height="20px" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path
                                         fill-rule="evenodd"
@@ -117,7 +170,10 @@ function HomePage() {
                                     />
                                     </svg><span>Today</span>
                                 </li>
-                                <li className="menu-item">
+                                <li 
+                                    onClick={() => setTodayUpcomingNotes('upcoming')}
+                                    className={`menu-item ${isTodayUpcomingNotes === 'upcoming' ? 'bg-blue-100' : ''}`}
+                                >
                                     <svg width="20px" height="20px" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path
                                         fill-rule="evenodd"
@@ -125,26 +181,29 @@ function HomePage() {
                                         d="M7.50009 0.877014C3.84241 0.877014 0.877258 3.84216 0.877258 7.49984C0.877258 11.1575 3.8424 14.1227 7.50009 14.1227C11.1578 14.1227 14.1229 11.1575 14.1229 7.49984C14.1229 3.84216 11.1577 0.877014 7.50009 0.877014ZM1.82726 7.49984C1.82726 4.36683 4.36708 1.82701 7.50009 1.82701C10.6331 1.82701 13.1729 4.36683 13.1729 7.49984C13.1729 10.6328 10.6331 13.1727 7.50009 13.1727C4.36708 13.1727 1.82726 10.6328 1.82726 7.49984ZM8 4.50001C8 4.22387 7.77614 4.00001 7.5 4.00001C7.22386 4.00001 7 4.22387 7 4.50001V7.50001C7 7.63262 7.05268 7.7598 7.14645 7.85357L9.14645 9.85357C9.34171 10.0488 9.65829 10.0488 9.85355 9.85357C10.0488 9.65831 10.0488 9.34172 9.85355 9.14646L8 7.29291V4.50001Z"
                                         fill="#000000"
                                     />
-                                    </svg><span>Upcoming</span>
+                                    </svg>
+                                    <span>Upcoming</span>
                                 </li>
-                                <li className="menu-item">
+                                <li 
+                                    onClick={() => setTodayUpcomingNotes('notes')}
+                                    className={`menu-item ${isTodayUpcomingNotes === 'notes' ? 'bg-blue-100' : ''}`}
+                                >
                                     <svg width="20px" height="20px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-sticky">
                                         <path d="M2.5 1A1.5 1.5 0 0 0 1 2.5v11A1.5 1.5 0 0 0 2.5 15h6.086a1.5 1.5 0 0 0 1.06-.44l4.915-4.914A1.5 1.5 0 0 0 15 8.586V2.5A1.5 1.5 0 0 0 13.5 1h-11zM2 2.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V8H9.5A1.5 1.5 0 0 0 8 9.5V14H2.5a.5.5 0 0 1-.5-.5v-11zm7 11.293V9.5a.5.5 0 0 1 .5-.5h4.293L9 13.793z"/>
-                                    </svg><span>Notes</span>
+                                    </svg>
+                                    <span>Notes</span>
                                 </li>
                             </ul>
                         </div>
                     </div>
-
                     <div className="border-l-2 border-gray-200 mx-4 mt-10 mb-10"></div>
-
                     <div className="w-5/6 p-6 overflow-y-auto">
                         <h3 className="text-4xl text-gray-800 font-bold mb-4">Sticky Notes</h3>
                         <div className="flex flex-wrap justify-start gap-4 pl-5 pt-2">
-                            {tasks.map((task, index) => (
-                                <div
-                                    key={index}
-                                    className="sticky-note w-48 md:w-56 lg:w-64 border-l-4 border-blue-400 bg-yellow-100 text-left p-4 hover:scale-105 hover:shadow-lg transition-all duration-300"
+                            {filterTasks().map(task => (
+                                <div 
+                                    key={task._id} 
+                                    className="sticky-note w-48 h-48 md:w-56 lg:w-64 border-l-4 border-blue-400 bg-yellow-100 text-left p-4 hover:scale-105 hover:shadow-lg transition-all duration-300 cursor-pointer"
                                     onClick={() => stickyNoteClick(task)}
                                 >
                                     <h4 className="font-bold text-blue-800">{task.title}</h4>
@@ -152,17 +211,18 @@ function HomePage() {
                                 </div>
                             ))}
                             <div
-                                className="sticky-note w-48 md:w-56 lg:w-64 border-l-4 border-blue-400 bg-gray-200 text-left p-4 hover:scale-105 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                                className="sticky-note w-48 h-48 md:w-56 lg:w-64 border-l-4 border-blue-400 bg-gray-200 text-left p-4 hover:scale-105 hover:shadow-lg transition-all duration-300 cursor-pointer"
                                 onClick={createBaseStickyNote}
                             >
                                 <h4 className="font-bold text-blue-800">+ Add a Sticky Note</h4>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
     );
 }
 
-export default HomePage;
+export default Notes;

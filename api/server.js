@@ -6,8 +6,6 @@ const Task = require('./models/Task');
 
 dotenv.config();
 
-console.log("MONGO_URL:", process.env.MONGO_URL);
-
 mongoose.connect(process.env.MONGO_URL)
   .then(() => {
     console.log("connection successful")
@@ -27,15 +25,15 @@ app.get('/test', (_req, res) => {
 });
 
 app.post('/tasks', async (req, res) => {
-  const{title, desc} = req.body;
-  const newTask = await Task.create({title,desc}); 
+  const{title, desc, dueDate} = req.body;
+  const newTask = await Task.create({title,desc,dueDate}); 
   console.log(req);
   res.json(newTask);
 });
 
 app.get('/todo', async (_req, res) => {
   try {
-      const taskInfo = await Task.find({}, { _id: 1, title: 1, desc: 1 });
+      const taskInfo = await Task.find({}, { _id: 1, title: 1, desc: 1, dueDate:1 });
       res.json(taskInfo);
   } catch (err) {
       console.error("Error:", err);
@@ -45,18 +43,21 @@ app.get('/todo', async (_req, res) => {
 
 app.put('/tasks/update', async (req, res) => {
   try {
-    const { title, desc, _id } = req.body;
+    const { title, desc, dueDate, _id } = req.body;
+    console.log("Received Update Request:", req.body);
+
     const task = await Task.findById(_id);
     if (task) {
       task.title = title;
       task.desc = desc;
+      task.dueDate = dueDate || null;
       const updatedTask = await task.save();
       res.json(updatedTask);
     } else {
       res.status(404).send("No task found");
     }
   } catch (err) {
-    console.error("Error:", err);
+    console.error("Error in /tasks/update:", err);
     res.status(500).send("Update unsuccessful");
   }
 });
