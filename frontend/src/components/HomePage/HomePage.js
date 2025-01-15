@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 function Notes() {
     const [tasks, setTasks] = useState([]);
@@ -110,45 +111,67 @@ function Notes() {
     return (
         <div className='back-color'>
             <div className="homepage bg-white pb-20 rounded-3xl shadow-xl">
-                {formVisible && (
-                        <div className="form-overlay">
-                        <div className="form-container font-semibold text-blue-900 text-center">
-                            <span>{isEditing ? 'Edit Sticky Note' : 'New Sticky Note'}</span>
-                            <form onSubmit={handleSubmit}>
-                                <textarea
-                                    value={title}
-                                    onChange={(ev) => setTitle(ev.target.value)}
-                                    type="text"
-                                    placeholder="Title"
-                                    className="mt-3 block bg-blue-50 border border-blue-400 rounded-sm shadow shadow-gray mx-auto w-80 p-3 mb-2 resize-none overflow-y-auto"
-                                    style={{ height: '50px' }}
-                                />
-                                <textarea
-                                    value={desc}
-                                    onChange={(ev) => setDesc(ev.target.value)}
-                                    placeholder="Description"
-                                    rows="5"
-                                    className="block bg-blue-50 border border-blue-400 rounded-sm shadow shadow-gray mx-auto w-80 p-3 mb-4 resize-none overflow-y-auto"
-                                />
-                                <div className={isTodayUpcomingNotes === 'notes' ? 'bg-blue-100' : ''}>
-                                    {isTodayUpcomingNotes !== 'notes' && (
-                                        <DatePicker
-                                            selected={theDate || new Date()}
-                                            onChange={(date) => setTheDate(date || new Date())}
-                                            className="block mx-auto border rounded-sm p-2"
-                                        />
-                                    )}
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    className="bg-blue-200 border border-blue-400 block w-1/2 mx-auto rounded-sm shadow shadow-gray m-2 text-blue-800"
-                                >
-                                    Submit
-                                </button>
-                            </form>
+            {formVisible && (
+                <div className="form-overlay">
+                    <div className="form-container font-semibold text-blue-900 text-center relative">
+                    <button
+                        type="button"
+                        className="absolute top-0 left-2 p-2 text-red-800 flex items-center"
+                        onClick={() => setFormVisible(false)}
+                        >
+                        <svg
+                            fill="#000000"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20px"
+                            height="20px"
+                            viewBox="0 0 52 52"
+                            enable-background="new 0 0 52 52"
+                            className="mr-2"
+                        >
+                            <path d="M48.6,23H15.4c-0.9,0-1.3-1.1-0.7-1.7l9.6-9.6c0.6-0.6,0.6-1.5,0-2.1l-2.2-2.2c-0.6-0.6-1.5-0.6-2.1,0L2.5,25c-0.6,0.6-0.6,1.5,0,2.1L20,44.6c0.6,0.6,1.5,0.6,2.1,0l2.1-2.1c0.6-0.6,0.6-1.5,0-2.1l-9.6-9.6C14,30.1,14.4,29,15.3,29h33.2c0.8,0,1.5-0.6,1.5-1.4v-3C50,23.8,49.4,23,48.6,23z"/>
+                        </svg>
+                        <span>Cancel</span>
+                    </button>
+                    <span>{isEditing ? 'Edit Sticky Note' : 'New Sticky Note'}</span>
+                    <form onSubmit={handleSubmit}>
+                        <textarea
+                        value={title}
+                        onChange={(ev) => setTitle(ev.target.value)}
+                        type="text"
+                        placeholder="Title"
+                        className="mt-3 block bg-blue-50 border border-blue-400 rounded-sm shadow shadow-gray mx-auto w-80 p-3 mb-2 resize-none overflow-y-auto"
+                        style={{ height: '50px' }}
+                        />
+                        <textarea
+                        value={desc}
+                        onChange={(ev) => setDesc(ev.target.value)}
+                        placeholder="Description"
+                        rows="5"
+                        className="block bg-blue-50 border border-blue-400 rounded-sm shadow shadow-gray mx-auto w-80 p-3 mb-4 resize-none overflow-y-auto"
+                        />
+                        <div className={isTodayUpcomingNotes === 'notes' ? 'bg-blue-100' : ''}>
+                        {(isTodayUpcomingNotes === 'upcoming' || isTodayUpcomingNotes === 'today') && (
+                            <div>Due Date:</div>
+                        )}
+                        {isTodayUpcomingNotes !== 'notes' && (
+                            <DatePicker
+                            selected={theDate || new Date()}
+                            onChange={(date) => setTheDate(date || new Date())}
+                            dateFormat="MMM dd, yyyy"
+                            className="block mx-auto w-28 text-center border rounded-sm p-2"
+                            />
+                        )}
                         </div>
+
+                        <button
+                        type="submit"
+                        className="bg-blue-200 border border-blue-400 block w-1/2 mx-auto rounded-sm shadow shadow-gray m-2 text-blue-800"
+                        >
+                        Submit
+                        </button>
+                    </form>
                     </div>
+                </div>
                 )}
                 <div className="homepage flex h-screen">
                     <div className="w-1/6 p-4 flex flex-col justify-between pt-5">
