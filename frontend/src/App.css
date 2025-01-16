@@ -40,9 +40,20 @@ h1 {
 }
 
 .sticky-note {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
   @apply shadow shadow-gray-200;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  width: 200px;
+  min-height: 200px;
+  max-width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  resize: none;
+  overflow: hidden;
+  word-break: normal;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
+
 
 .sticky-note:hover {
   transform: scale(1.05);

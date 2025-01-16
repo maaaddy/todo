@@ -62,21 +62,20 @@ app.put('/tasks/update', async (req, res) => {
   }
 });
 
-app.put('/tasks/delete', async (req, res) => {
-  try {
-    const { _id } = req.body;
-    const task = await Task.findById(_id);
-    if (task) {
-      Task.deleteOne({_id});
-      res.json("Task Deleted");
-    } else {
-      res.status(404).send("No task found");
+app.delete('/tasks/delete', async (req, res) => {
+    try {
+        const { _id } = req.query;
+        if (!_id) {
+            return res.status(400).send({ message: 'Task ID is required' });
+        }
+        await Task.deleteOne({ _id });
+        res.status(200).send({ message: 'Task deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: 'Error deleting task' });
     }
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).send("Delete unsuccessful");
-  }
 });
+
 
 // Port that we're listening on -----------------------------------------
 const server = app.listen(5000);
